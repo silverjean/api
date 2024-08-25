@@ -4,38 +4,45 @@ import (
 	"api/src/database"
 	"api/src/models"
 	"api/src/repositories"
+	"api/src/responses"
 	"encoding/json"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
 func CreateUser(res http.ResponseWriter, req *http.Request) {
 	requestBody, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Fatal(err)
+		responses.Err(res, http.StatusUnprocessableEntity, err)
+		return
 	}
 
-	var user models.User
+	var userModel models.User
 
-	if err = json.Unmarshal(requestBody, &user); err != nil {
-		log.Fatal(err)
+	if err = json.Unmarshal(requestBody, &userModel); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = userModel.Prepare(); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		log.Fatal(err)
+		responses.Err(res, http.StatusInternalServerError, err)
 	}
+	defer db.Close()
 
 	repo := repositories.NewRepositoryUser(db)
 
-	userID, err := repo.Create(user)
+	userModel.ID, err = repo.Create(userModel)
 	if err != nil {
-		log.Fatal(err)
+		responses.Err(res, http.StatusInternalServerError, err)
 	}
 
-	res.Write([]byte(fmt.Sprintf("Inserted ID: %d", userID)))
+	responses.JSON(res, http.StatusCreated, userModel)
 }
 
 func FindUsers(res http.ResponseWriter, req *http.Request) {
