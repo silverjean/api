@@ -3,6 +3,7 @@ package repositories
 import (
 	"api/src/models"
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -67,4 +68,47 @@ func (user usersRepository) Find(nameOrNick string) ([]models.User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func (user usersRepository) FindOne(ID uint64) (models.User, error) {
+	lines, err := user.db.Query(
+		"SELECT id, name, nick, email, create_date FROM users WHERE id = ?",
+		ID,
+	)
+	if err != nil {
+		return 	models.User{}, err
+	}
+	defer lines.Close()
+	
+	var userModel models.User
+	if lines.Next() {
+		if err = lines.Scan(
+			&userModel.ID,
+			&userModel.Name,
+			&userModel.Nick,
+			&userModel.Email,
+			&userModel.CreateDate,
+		); err != nil {
+			return models.User{}, errors.New("user not found")
+		}
+	}
+
+	return userModel, nil
+}
+
+func (user usersRepository) UpdateUser(ID uint64, userBody models.User) error {
+	statemant, err := user.db.Prepare(
+		"UPDATE users SET name = ?, nick = ?, email = ? WHERE id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statemant.Close()
+
+	if _, err = statemant.Exec(userBody.Name, userBody.Nick, userBody.Email, ID); err != nil {
+		return err
+	}
+
+	return nil
+
 }

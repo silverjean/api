@@ -8,7 +8,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 func CreateUser(res http.ResponseWriter, req *http.Request) {
@@ -25,7 +28,7 @@ func CreateUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err = userModel.Prepare(); err != nil {
+	if err = userModel.Prepare("register"); err != nil {
 		responses.Err(res, http.StatusBadRequest, err)
 		return
 	}
@@ -52,6 +55,7 @@ func FindUsers(res http.ResponseWriter, req *http.Request) {
 	db, err := database.Connect()
 	if err != nil {
 		responses.Err(res, http.StatusInternalServerError, err)
+		return
 	}
 	defer db.Close()
 
@@ -67,11 +71,71 @@ func FindUsers(res http.ResponseWriter, req *http.Request) {
 }
 
 func FindUser(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("Finding one user"))
+	params := mux.Vars(req)
+
+	
+	userID, err := strconv.ParseUint(params["userId"], 10, 64);
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}	
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewRepositoryUser(db)
+	user, err := repo.FindOne(userID)
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(res, http.StatusOK, user)
 }
 
 func UpdateUser(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("Updating one user"))
+	params := mux.Vars(req)
+	userID, err := strconv.ParseUint(params["userId"], 10, 64);
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	reqBody, err := io.ReadAll(req.Body)
+	if err != nil {
+		responses.Err(res, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var userModel models.User
+
+	if err = json.Unmarshal(reqBody, &userModel); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = userModel.Prepare("edit"); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}		
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+	}
+	defer db.Close()
+
+	repo := repositories.NewRepositoryUser(db)
+	if err = repo.UpdateUser(userID, userModel); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(res, http.StatusNoContent, nil)
 }
 
 func DeleteUsers(res http.ResponseWriter, req *http.Request) {
