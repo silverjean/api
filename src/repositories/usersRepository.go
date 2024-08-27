@@ -112,3 +112,19 @@ func (user usersRepository) UpdateUser(ID uint64, userBody models.User) error {
 	return nil
 
 }
+
+func (user usersRepository) Delete(ID uint64) error {
+	statemant, err := user.db.Prepare(
+		"DELETE FROM users WHERE id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statemant.Close()
+
+	if _, err = statemant.Exec(ID); err != nil {
+		return err
+	}
+
+	return nil
+}
