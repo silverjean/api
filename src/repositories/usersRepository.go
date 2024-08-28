@@ -114,15 +114,15 @@ func (user usersRepository) UpdateUser(ID uint64, userBody models.User) error {
 }
 
 func (user usersRepository) Delete(ID uint64) error {
-	statemant, err := user.db.Prepare(
+	statement, err := user.db.Prepare(
 		"DELETE FROM users WHERE id = ?",
 	)
 	if err != nil {
 		return err
 	}
-	defer statemant.Close()
+	defer statement.Close()
 
-	if _, err = statemant.Exec(ID); err != nil {
+	if _, err = statement.Exec(ID); err != nil {
 		return err
 	}
 
