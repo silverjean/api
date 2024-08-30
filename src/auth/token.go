@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"api/src/config"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -13,5 +14,5 @@ func TokenCreate(userID uint64) (string, error) {
 	permissions["userId"] = userID
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, permissions)
-	return token.SignedString([]byte("TestSecret"))
+	return token.SignedString(config.SecretKey)
 }

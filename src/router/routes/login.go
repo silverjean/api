@@ -9,5 +9,5 @@ var loginRoute = Route{
 	Uri:    "/login",
 	Method: http.MethodPost,
 	Function: controllers.Login,
-	RequestAuth: false,
+	RequireAuth: false,
 }

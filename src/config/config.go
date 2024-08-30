@@ -12,6 +12,7 @@ import (
 var (
 	StringConectionDataBase = ""
 	Port                    = 0
+	SecretKey 				[]byte
 )
 
 func OnLoad() {
@@ -32,4 +33,6 @@ func OnLoad() {
 		os.Getenv("DB_PASS"),
 		os.Getenv("DB_NAME"),
 	)
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 }
