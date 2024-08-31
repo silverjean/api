@@ -44,7 +44,7 @@ func Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	token, err := auth.TokenCreate(userModel.ID)
+	token, err := auth.TokenCreate(dbUser.ID)
 	if err != nil {
 		responses.Err(res, http.StatusInternalServerError, err)
 		return
