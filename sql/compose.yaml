@@ -1,0 +1,18 @@
+services:
+  db:
+    image: mysql:latest
+    restart: unless-stopped
+    container_name: gocourse
+    ports:
+      - 3306:3308
+    environment:
+      MYSQL_ROOT_PASSWORD: my_secret_password
+      MYSQL_DATABASE: go_course
+      MYSQL_USER: go_use
+      MYSQL_PASSWORD: go_pass
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
+    driver: local
