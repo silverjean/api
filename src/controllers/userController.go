@@ -6,6 +6,7 @@ import (
 	"api/src/models"
 	"api/src/repositories"
 	"api/src/responses"
+	"api/src/security"
 	"encoding/json"
 	"errors"
 	"io"
@@ -305,4 +306,64 @@ func FollowingUser (res http.ResponseWriter, req *http.Request) {
 	}
 
 	responses.JSON(res, http.StatusOK, following)
+}
+
+func UpdatePassUser(res http.ResponseWriter, req *http.Request) {
+	userIDOnToken, err := auth.ExtractUserID(req)
+	if err != nil {
+		responses.Err(res, http.StatusUnauthorized, err)
+		return
+	}
+	
+	params := mux.Vars(req)
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	if userIDOnToken != userID {
+		responses.Err(res, http.StatusForbidden, errors.New("it is not possible update the password of another user thar not yours"))
+		return
+	}
+
+	reqBody, err := io.ReadAll(req.Body)
+
+	var password models.Password
+	if err = json.Unmarshal(reqBody, &password); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewRepositoryUser(db)
+	passOnDatabase, err := repo.FindPassByID(userID)
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = security.ValidatePass(passOnDatabase, password.Current); err != nil {
+		responses.Err(res, http.StatusUnauthorized, err)
+		return
+	}
+
+	passWithHash, err := security.Hash(password.New)
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = repo.UpdatePass(userID, string(passWithHash)); err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(res, http.StatusNoContent, nil)
 }

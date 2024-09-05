@@ -247,3 +247,34 @@ func (user usersRepository) FindFollowing(ID uint64) ([]models.User, error) {
 	}
 	return users, nil
 }
+
+func (repo usersRepository) FindPassByID(userID uint64) (string, error) {
+	line, err := repo.db.Query("SELECT password FROM users WHERE id = ?", userID)
+	if err != nil {
+		return "", err
+	}
+	defer line.Close()
+
+	var user models.User
+
+	if line.Next() {
+		if err = line.Scan(&user.Password); err != nil {
+			return "", err
+		}
+	}
+
+	return user.Password, nil
+}
+
+func (repo usersRepository) UpdatePass(userID uint64, pass string) error {
+	statemant, err := repo.db.Prepare("UPDATE users SET password = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+
+	if _, err = statemant.Exec(pass, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
