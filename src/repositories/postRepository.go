@@ -34,3 +34,34 @@ func (repo Post) Create(post models.Post) (uint64, error) {
 
 	return uint64(lastInserID), nil
 }
+
+func (repo Post) FindPostByID(postID uint64) (models.Post, error) {
+	lines, err := repo.db.Query(
+		`SELECT P.*, U.nick FROM
+		posts P INNER JOIN users U
+		ON U.id = P.author_id WHERE P.id = ?`,
+		postID,
+	)
+	if err != nil {
+		return models.Post{}, err
+	}
+	defer lines.Close()
+
+	var post models.Post
+
+	if lines.Next() {
+		if err = lines.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Content,
+			&post.AuthorID,
+			&post.Likes,
+			&post.CreateAt,
+			&post.AuthorNick,
+		); err != nil {
+			return models.Post{}, err
+		}
+	}
+
+	return post, nil
+}

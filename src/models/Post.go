@@ -13,7 +13,7 @@ type Post struct {
 	AuthorID   uint64    `json:"authorId,omitempty"`
 	AuthorNick string    `json:"authorNick,omitempty"`
 	Likes      uint64    `json:"likes"`
-	CriateAt   time.Time `json:"createAt,omitempty"`
+	CreateAt   time.Time `json:"createAt,omitempty"`
 }
 
 func (post *Post) Prepare() error {
