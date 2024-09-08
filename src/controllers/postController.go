@@ -60,7 +60,27 @@ func CreatePost(res http.ResponseWriter, req *http.Request){
 
 }
 func FindPosts(res http.ResponseWriter, req *http.Request){
+	userID, err := auth.ExtractUserID(req)
+	if err != nil {
+		responses.Err(res, http.StatusUnauthorized, err)
+		return
+	}
 
+	db, err := database.Connect()
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewRepositoryPost(db)
+	posts, err := repo.FindAllPosts(userID)
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	} 
+
+	responses.JSON(res, http.StatusOK, posts)
 }
 func FindPost(res http.ResponseWriter, req *http.Request){
 	params := mux.Vars(req)

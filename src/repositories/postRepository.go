@@ -65,3 +65,37 @@ func (repo Post) FindPostByID(postID uint64) (models.Post, error) {
 
 	return post, nil
 }
+
+func (repo Post) FindAllPosts(userID uint64) ([]models.Post, error) {
+	lines, err := repo.db.Query(`
+		SELECT DISTINCT p.*, u.nick FROM posts p 
+		INNET JOIN users u ON u.id = p.author_id
+		INNER JOIN followers f ON p.author_id = f.user_id
+		WHERE u.id = ? or f.follower_id = ?
+	`, userID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer lines.Close()
+
+	var posts []models.Post
+
+	for lines.Next() {
+		var post models.Post
+		if err = lines.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Content,
+			&post.AuthorID,
+			&post.Likes,
+			&post.CreateAt,
+			&post.AuthorNick,
+		); err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
