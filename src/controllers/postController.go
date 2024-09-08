@@ -32,6 +32,13 @@ func CreatePost(res http.ResponseWriter, req *http.Request){
 
 	post.AuthorID = userId
 
+	if err = post.Prepare(); err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	
+
 	db, err := database.Connect()
 	if err != nil {
 		responses.Err(res, http.StatusInternalServerError, err)
