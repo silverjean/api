@@ -166,5 +166,42 @@ func UpdatePost(res http.ResponseWriter, req *http.Request){
 	responses.JSON(res, http.StatusOK, nil)
 }
 func DeletePost(res http.ResponseWriter, req *http.Request){
+	userID, err := auth.ExtractUserID(req)
+	if err != nil {
+		responses.Err(res, http.StatusUnauthorized, err)
+		return
+	}
 
+	params := mux.Vars(req)
+	postID, err := strconv.ParseUint(params["postId"], 10, 64)
+	if err != nil {
+		responses.Err(res, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewRepositoryPost(db)
+	postOnDB, err := repo.FindPostByID(postID)
+	if err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+
+	if postOnDB.AuthorID != userID {
+		responses.Err(res, http.StatusForbidden, errors.New("it is not possible delete post that is not yours"))
+		return
+	}
+
+	if err = repo.DeletePost(postID); err != nil {
+		responses.Err(res, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(res, http.StatusOK, nil)
 }
