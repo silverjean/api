@@ -71,7 +71,7 @@ func (repo Post) FindAllPosts(userID uint64) ([]models.Post, error) {
 		SELECT DISTINCT p.*, u.nick FROM posts p 
 		INNET JOIN users u ON u.id = p.author_id
 		INNER JOIN followers f ON p.author_id = f.user_id
-		WHERE u.id = ? or f.follower_id = ?
+		WHERE u.id = ? or f.follower_id = ? ORDER BY 1 DESC
 	`, userID, userID)
 	if err != nil {
 		return nil, err
@@ -98,4 +98,20 @@ func (repo Post) FindAllPosts(userID uint64) ([]models.Post, error) {
 	}
 
 	return posts, nil
+}
+
+func (repo Post) UpdatePost(postID uint64, post models.Post) error {
+	statement, err := repo.db.Prepare(
+		"update posts set title = ?, content = ? where id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err = statement.Exec(post.Title, post.Content, postID); err != nil {
+		return err
+	}
+
+	return nil
 }
